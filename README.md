@@ -1,6 +1,6 @@
 # zs3
 
-S3-compatible storage in 1100 lines of Zig. Zero dependencies.
+S3-compatible storage in ~1200 lines of Zig. Zero dependencies.
 
 I got mass-evicted by MinIO hitting 12GB RAM for storing test fixtures. So I wrote my own.
 
@@ -10,7 +10,7 @@ Most S3 usage is PUT, GET, DELETE, LIST with basic auth. You don't need 200k lin
 
 | | zs3 | MinIO | LocalStack |
 |---|-----|-------|------------|
-| Lines | 1,100 | 200,000 | ??? |
+| Lines | ~1,200 | 200,000 | ??? |
 | Binary | 250KB | 100MB | Docker + JVM |
 | RAM idle | 2MB | 200MB+ | 500MB+ |
 | Dependencies | 0 | many | many |
