@@ -2,8 +2,6 @@
 
 S3-compatible storage in ~1200 lines of Zig. Zero dependencies.
 
-I got mass-evicted by MinIO hitting 12GB RAM for storing test fixtures. So I wrote my own.
-
 ## Why
 
 Most S3 usage is PUT, GET, DELETE, LIST with basic auth. You don't need 200k lines of code for that.
