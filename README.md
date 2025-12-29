@@ -124,25 +124,31 @@ zig build test           # 11 unit tests
 
 ## Benchmark
 
-### Sequential (100 iterations)
+### Raw Performance (ab -n 100000 -c 100 -k)
+
+| Server | Requests/sec | Latency | Notes |
+|--------|--------------|---------|-------|
+| **zs3** | **199,323** | **5µs** | Zig, kqueue, single-threaded |
+| C (kqueue) | 206,115 | 5µs | Raw C, kqueue, single-threaded |
+| Ratio | **96.7%** | Same | Near-C performance |
+
+### vs RustFS (100 iterations)
 
 | Operation | zs3 | RustFS | Speedup |
 |-----------|-----|--------|---------|
-| PUT 1KB | 0.75ms | 12.57ms | 17x |
-| PUT 4KB | 0.52ms | 14.44ms | 28x |
-| PUT 1MB | 3.64ms | 55.74ms | 15x |
-| GET 1KB | 0.42ms | 10.01ms | 24x |
-| GET 1MB | 0.71ms | 53.22ms | 75x |
-| LIST | 3.83ms | 462ms | 121x |
-| DELETE | 0.43ms | 11.52ms | 27x |
+| PUT 1KB | 0.48ms | 12.57ms | **26x** |
+| PUT 1MB | 1.37ms | 55.74ms | **41x** |
+| GET 1KB | 0.32ms | 10.01ms | **31x** |
+| GET 1MB | 0.52ms | 53.22ms | **102x** |
+| LIST | 2.86ms | 462ms | **162x** |
+| DELETE | 0.34ms | 11.52ms | **34x** |
 
 ### Concurrent (50 workers, 1000 requests)
 
 | Metric | zs3 | RustFS | Advantage |
 |--------|-----|--------|-----------|
-| Throughput | 5061 req/s | 174 req/s | **29x** |
-| Latency (mean) | 8.78ms | 277ms | **31x faster** |
-| Latency (p99) | 16.96ms | 509ms | **30x faster** |
+| Throughput | 5,165 req/s | 174 req/s | **30x** |
+| Latency (mean) | 8.86ms | 277ms | **31x faster** |
 
 Run your own: `python3 benchmark.py`
 
