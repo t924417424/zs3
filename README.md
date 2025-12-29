@@ -6,12 +6,12 @@ S3-compatible storage in ~1K lines of Zig. Zero dependencies.
 
 Most S3 usage is PUT, GET, DELETE, LIST with basic auth. You don't need 200k lines of code for that.
 
-| | zs3 | MinIO | RustFS |
-|---|-----|-------|--------|
-| Lines | ~1,200 | 200,000 | ~80,000 |
-| Binary | 250KB | 100MB | ~50MB |
-| RAM idle | 2MB | 200MB+ | ~100MB |
-| Dependencies | 0 | many | ~200 crates |
+| | zs3 | RustFS | MinIO |
+|---|-----|--------|-------|
+| Lines | ~1,200 | ~80,000 | 200,000 |
+| Binary | 250KB | ~50MB | 100MB |
+| RAM idle | 2MB | ~100MB | 200MB+ |
+| Dependencies | 0 | ~200 crates | many |
 
 ## What it does
 
