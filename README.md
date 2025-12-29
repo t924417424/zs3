@@ -124,17 +124,25 @@ zig build test           # 11 unit tests
 
 ## Benchmark
 
-zs3 vs RustFS (100 iterations, localhost):
+### Sequential (100 iterations)
 
 | Operation | zs3 | RustFS | Speedup |
 |-----------|-----|--------|---------|
-| PUT 1KB | 0.40ms | 12.58ms | 31x |
-| PUT 4KB | 0.34ms | 13.66ms | 41x |
-| PUT 1MB | 1.32ms | 55.79ms | 42x |
-| GET 1KB | 0.31ms | 9.80ms | 31x |
-| GET 1MB | 0.53ms | 53.31ms | 100x |
-| LIST | 3.01ms | 462ms | 153x |
-| DELETE | 0.35ms | 11.34ms | 32x |
+| PUT 1KB | 0.75ms | 12.57ms | 17x |
+| PUT 4KB | 0.52ms | 14.44ms | 28x |
+| PUT 1MB | 3.64ms | 55.74ms | 15x |
+| GET 1KB | 0.42ms | 10.01ms | 24x |
+| GET 1MB | 0.71ms | 53.22ms | 75x |
+| LIST | 3.83ms | 462ms | 121x |
+| DELETE | 0.43ms | 11.52ms | 27x |
+
+### Concurrent (50 workers, 1000 requests)
+
+| Metric | zs3 | RustFS | Advantage |
+|--------|-----|--------|-----------|
+| Throughput | 5061 req/s | 174 req/s | **29x** |
+| Latency (mean) | 8.78ms | 277ms | **31x faster** |
+| Latency (p99) | 16.96ms | 509ms | **30x faster** |
 
 Run your own: `python3 benchmark.py`
 
