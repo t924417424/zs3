@@ -84,6 +84,7 @@ fn eventLoopEpoll(allocator: Allocator, ctx: *const S3Context, server: *net.Serv
 }
 
 fn eventLoopKqueue(allocator: Allocator, ctx: *const S3Context, server: *net.Server) !void {
+    @setRuntimeSafety(false);
     const c = std.c;
     const kq = c.kqueue();
     if (kq < 0) return error.Kqueue;
@@ -301,16 +302,19 @@ fn parseRequestFromBuf(allocator: Allocator, data: []const u8, stream: net.Strea
 }
 
 fn hasAuth(data: []const u8) bool {
+    @setRuntimeSafety(false);
+    if (data.len < 14) return false;
+    const end = data.len - 13;
+    const ptr = data.ptr;
     var i: usize = 0;
-    while (i + 14 <= data.len) : (i += 1) {
-        if ((data[i] == 'A' or data[i] == 'a') and
-            (data[i + 1] == 'u' or data[i + 1] == 'U') and
-            data[i + 2] == 't' and data[i + 3] == 'h' and
-            data[i + 4] == 'o' and data[i + 5] == 'r' and
-            data[i + 6] == 'i' and data[i + 7] == 'z' and
-            data[i + 8] == 'a' and data[i + 9] == 't' and
-            data[i + 10] == 'i' and data[i + 11] == 'o' and
-            data[i + 12] == 'n' and data[i + 13] == ':')
+    while (i < end) : (i += 1) {
+        const p = ptr + i;
+        if ((p[0] == 'A' or p[0] == 'a') and
+            (p[1] == 'u' or p[1] == 'U') and
+            p[2] == 't' and p[3] == 'h' and p[4] == 'o' and
+            p[5] == 'r' and p[6] == 'i' and p[7] == 'z' and
+            p[8] == 'a' and p[9] == 't' and p[10] == 'i' and
+            p[11] == 'o' and p[12] == 'n' and p[13] == ':')
         {
             return true;
         }
@@ -318,7 +322,22 @@ fn hasAuth(data: []const u8) bool {
     return false;
 }
 
+fn findHeaderEnd(data: []const u8) ?usize {
+    @setRuntimeSafety(false);
+    if (data.len < 4) return null;
+    const end = data.len - 3;
+    const ptr = data.ptr;
+    var i: usize = 0;
+    while (i < end) : (i += 1) {
+        if (ptr[i] == '\r' and ptr[i + 1] == '\n' and ptr[i + 2] == '\r' and ptr[i + 3] == '\n') {
+            return i;
+        }
+    }
+    return null;
+}
+
 fn handleConnectionWithStream(allocator: Allocator, ctx: *const S3Context, stream: net.Stream) !bool {
+    @setRuntimeSafety(false);
     var buf: [MAX_HEADER_SIZE]u8 = undefined;
     var total_read: usize = 0;
 
@@ -326,7 +345,7 @@ fn handleConnectionWithStream(allocator: Allocator, ctx: *const S3Context, strea
         const n = stream.read(buf[total_read..]) catch return false;
         if (n == 0) return false;
         total_read += n;
-        if (std.mem.indexOf(u8, buf[0..total_read], "\r\n\r\n")) |_| break;
+        if (findHeaderEnd(buf[0..total_read])) |_| break;
     }
     if (total_read == 0) return false;
 
