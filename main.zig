@@ -10,7 +10,7 @@ const MAX_KEY_LENGTH = 1024;
 const MAX_BUCKET_LENGTH = 63;
 const MAX_CONNECTIONS = 1024;
 
-const ERROR_403 = "HTTP/1.1 403 Forbidden\r\nContent-Length: 116\r\nConnection: keep-alive\r\nContent-Type: application/xml\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?><Error><Code>AccessDenied</Code><Message>Invalid credentials</Message></Error>";
+const ERROR_403 = "HTTP/1.1 403 Forbidden\r\nContent-Length: 6\r\nConnection: keep-alive\r\n\r\nDenied";
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -124,9 +124,22 @@ fn eventLoopKqueue(allocator: Allocator, ctx: *const S3Context, server: *net.Ser
                     if (r < 0) std.log.err("kevent add failed", .{});
                 }
             } else {
+                setNonBlocking(fd);
                 const stream = net.Stream{ .handle = fd };
-                handleConnectionWithStream(allocator, ctx, stream) catch {};
-                stream.close();
+                const keep = handleConnectionWithStream(allocator, ctx, stream) catch false;
+                if (keep) {
+                    var add: [1]c.Kevent = .{.{
+                        .ident = @intCast(fd),
+                        .filter = c.EVFILT.READ,
+                        .flags = c.EV.ADD | c.EV.ONESHOT,
+                        .fflags = 0,
+                        .data = 0,
+                        .udata = 0,
+                    }};
+                    _ = c.kevent(kq, &add, 1, &events, 0, null);
+                } else {
+                    stream.close();
+                }
             }
         }
     }
@@ -305,41 +318,38 @@ fn hasAuth(data: []const u8) bool {
     return false;
 }
 
-fn handleConnectionWithStream(allocator: Allocator, ctx: *const S3Context, stream: net.Stream) !void {
+fn handleConnectionWithStream(allocator: Allocator, ctx: *const S3Context, stream: net.Stream) !bool {
     var buf: [MAX_HEADER_SIZE]u8 = undefined;
     var total_read: usize = 0;
 
-    while (true) {
-        while (total_read < buf.len) {
-            const n = stream.read(buf[total_read..]) catch return;
-            if (n == 0) return;
-            total_read += n;
-            if (std.mem.indexOf(u8, buf[0..total_read], "\r\n\r\n")) |_| break;
-        }
-        if (total_read == 0) return;
-
-        const data = buf[0..total_read];
-        if (!hasAuth(data)) {
-            _ = stream.write(ERROR_403) catch return;
-            total_read = 0;
-            continue;
-        }
-
-        var arena = std.heap.ArenaAllocator.init(allocator);
-        defer arena.deinit();
-        const alloc = arena.allocator();
-
-        var req = parseRequestFromBuf(alloc, data, stream) catch return;
-        var res = Response.init(alloc);
-
-        route(ctx, alloc, &req, &res) catch |err| {
-            std.log.err("Handler error: {}", .{err});
-            sendError(&res, 500, "InternalError", "Internal server error");
-        };
-
-        res.write(stream) catch return;
-        return;
+    while (total_read < buf.len) {
+        const n = stream.read(buf[total_read..]) catch return false;
+        if (n == 0) return false;
+        total_read += n;
+        if (std.mem.indexOf(u8, buf[0..total_read], "\r\n\r\n")) |_| break;
     }
+    if (total_read == 0) return false;
+
+    const data = buf[0..total_read];
+    if (!hasAuth(data)) {
+        _ = stream.write(ERROR_403) catch return false;
+        return true;
+    }
+
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var req = parseRequestFromBuf(alloc, data, stream) catch return false;
+    var res = Response.init(alloc);
+
+    route(ctx, alloc, &req, &res) catch |err| {
+        std.log.err("Handler error: {}", .{err});
+        sendError(&res, 500, "InternalError", "Internal server error");
+    };
+
+    res.write(stream) catch return false;
+    return false;
 }
 
 pub fn isValidBucketName(name: []const u8) bool {
