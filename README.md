@@ -9,8 +9,8 @@ Most S3 usage is PUT, GET, DELETE, LIST with basic auth. You don't need 200k lin
 | | zs3 | RustFS | MinIO |
 |---|-----|--------|-------|
 | Lines | ~2,500 | ~80,000 | 200,000 |
-| Binary | 250KB | ~50MB | 100MB |
-| RAM idle | 2MB | ~100MB | 200MB+ |
+| Binary | 330KB | ~50MB | 100MB |
+| RAM idle | 3MB | ~100MB | 200MB+ |
 | Dependencies | 0 | ~200 crates | many |
 
 ## What it does
@@ -21,7 +21,7 @@ Most S3 usage is PUT, GET, DELETE, LIST with basic auth. You don't need 200k lin
 - DeleteObjects batch operation
 - Multipart uploads for large files
 - Range requests for streaming/seeking
-- ~250KB static binary
+- ~330KB static binary
 
 **Distributed Mode (IPFS-like):**
 - Content-addressed storage with BLAKE3 hashing
