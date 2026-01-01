@@ -1,6 +1,6 @@
 # zs3
 
-S3-compatible storage in ~2.9K lines of Zig. Zero dependencies. Optional distributed mode.
+S3-compatible storage in ~3K lines of Zig. Zero dependencies. Optional distributed mode.
 
 ## Why
 
@@ -8,7 +8,7 @@ Most S3 usage is PUT, GET, DELETE, LIST with basic auth. You don't need 200k lin
 
 | | zs3 | RustFS | MinIO |
 |---|-----|--------|-------|
-| Lines | ~2,900 | ~80,000 | 200,000 |
+| Lines | ~3,000 | ~80,000 | 200,000 |
 | Binary | 360KB | ~50MB | 100MB |
 | RAM idle | 3MB | ~100MB | 200MB+ |
 | Dependencies | 0 | ~200 crates | many |
