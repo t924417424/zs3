@@ -1380,6 +1380,10 @@ pub fn isValidKey(key: []const u8) bool {
     for (key) |c| {
         if (c < 32 or c == 127) return false; // no control chars
     }
+    // Block path traversal attempts
+    if (std.mem.indexOf(u8, key, "..")) |_| return false;
+    // Block absolute paths
+    if (key[0] == '/') return false;
     return true;
 }
 
@@ -2107,9 +2111,13 @@ fn handleListBuckets(ctx: *const S3Context, allocator: Allocator, res: *Response
 }
 
 fn handleInitiateMultipart(ctx: *const S3Context, allocator: Allocator, res: *Response, bucket: []const u8, key: []const u8) !void {
+    // Generate unique upload ID using timestamp + random bytes to prevent collision
     const timestamp: u64 = @intCast(std.time.timestamp());
+    var random_bytes: [8]u8 = undefined;
+    std.crypto.random.bytes(&random_bytes);
+    const random_suffix = std.mem.readInt(u64, &random_bytes, .little);
     var upload_id_buf: [32]u8 = undefined;
-    const upload_id = std.fmt.bufPrint(&upload_id_buf, "{x}", .{timestamp}) catch unreachable;
+    const upload_id = std.fmt.bufPrint(&upload_id_buf, "{x}{x}", .{ timestamp, random_suffix }) catch unreachable;
 
     const parts_dir = std.fmt.allocPrint(allocator, "{s}/.uploads/{s}", .{ ctx.data_dir, upload_id }) catch return;
     defer allocator.free(parts_dir);
